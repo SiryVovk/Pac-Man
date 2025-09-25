@@ -1,17 +1,28 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private PlayerInput playerInput;
+    public Action<Vector2> OnDirectionChange;
 
-    private Vector2 direction;
+    [SerializeField] private float duration = 0.5f;
+
+    private PlayerInput playerInput;
+    private Field field;
+
+    private Vector2Int direction;
+    private Vector2Int nextDirection;
+    private Vector2Int gridPosition;
+
+    private bool isMoving = false;
 
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
-        direction = Vector2.zero;
+        direction = Vector2Int.zero;
     }
+
 
     private void OnEnable()
     {
@@ -29,32 +40,86 @@ public class PlayerMovement : MonoBehaviour
         playerInput.OnMoveRight -= SetRightDirection;
     }
 
-    private void SetRightDirection()
+    private void Start()
     {
-        direction = Vector2.right;
-        DebugLogDirection();
+        GhostManager.Instance.RegistrPlayer(this);
+        SetDirection(Vector2Int.up);
     }
 
-    private void SetLeftDirection()
+    public void Init(Field field)
     {
-        direction = Vector2.left;
-        DebugLogDirection();
+        this.field = field;
     }
 
-    private void SetUpDirection()
+    private void SetUpDirection() => SetDirection(Vector2Int.up);
+    private void SetDownDirection() => SetDirection(Vector2Int.down);
+    private void SetLeftDirection() => SetDirection(Vector2Int.left);
+    private void SetRightDirection() => SetDirection(Vector2Int.right);
+
+    private void Update()
     {
-        direction = Vector2.up;
-        DebugLogDirection();
+        if (!isMoving)
+        {
+            Move();
+        }
     }
 
-    private void SetDownDirection()
+    private void SetDirection(Vector2Int newDir)
     {
-        direction = Vector2.down;
-        DebugLogDirection();
+        nextDirection = newDir;
     }
 
-    private void DebugLogDirection()
+    private void Move()
     {
-        Debug.Log("Direction: " + direction);
+        StartCoroutine(MoveCoroutine());
+    }
+
+    private IEnumerator MoveCoroutine()
+    {
+        isMoving = true;
+
+        Vector2Int targetDir = direction;
+
+
+        if (field.GetCellAtPosition(gridPosition + nextDirection)?.Type != CellType.Wall)
+        {
+            targetDir = nextDirection;
+            OnDirectionChange?.Invoke(targetDir);
+        }
+
+        Cell nextCell = field.GetCellAtPosition(gridPosition + targetDir);
+
+        if (nextCell != null && nextCell.Type != CellType.Wall && nextCell.Type != CellType.GhostExit)
+        {
+            Vector3 startPos = transform.position;
+            Vector3 endPos = nextCell.InWorldPosition;
+
+            float elapsedTime = 0f;
+
+            while (elapsedTime < duration)
+            {
+                transform.position = Vector3.Lerp(startPos, endPos, elapsedTime / duration);
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+
+            transform.position = endPos;
+            gridPosition += targetDir;
+            field.OnPlayerEnterCell(gridPosition, gridPosition - targetDir);
+
+            direction = targetDir;
+        }
+
+        isMoving = false;
+    }
+
+    public void SetGridPosition(Vector2Int newPosition)
+    {
+        gridPosition = newPosition;
+    }
+
+    public Vector2Int GetPlayerGridPosition()
+    {
+        return gridPosition;
     }
 }

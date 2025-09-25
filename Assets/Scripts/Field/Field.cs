@@ -1,12 +1,16 @@
+using System;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class Field : MonoBehaviour
 {
+    public Action<Cell> OnPlayerCellEnter;
+
     [SerializeField] private Tilemap tilemap;
     [SerializeField] private TileBase[] wallTile;
     [SerializeField] private TileBase[] palletTile;
     [SerializeField] private TileBase[] powerPalletTile;
+    [SerializeField] private TileBase[] exitTile;
 
 
     private Cell[,] cells;
@@ -14,7 +18,6 @@ public class Field : MonoBehaviour
     private void Awake()
     {
         InitializeField();
-        DebugPrintField();
     }
 
     private void InitializeField()
@@ -29,26 +32,30 @@ public class Field : MonoBehaviour
             TileBase tile = tilemap.GetTile(localPos);
             Vector2Int cellPos = new Vector2Int(pos.x - bounds.xMin, pos.y - bounds.yMin);
             Vector3 worldPos = tilemap.GetCellCenterWorld(localPos);
-            
+
             if (IsNededTile(tile, wallTile))
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, CellType.Wall);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Wall);
             }
             else if (IsNededTile(tile, palletTile))
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, CellType.Pallet);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Pallet);
             }
             else if (IsNededTile(tile, powerPalletTile))
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, CellType.PowerPallet);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.PowerPallet);
+            }
+            else if (IsNededTile(tile, exitTile))
+            {
+                cells[cellPos.x,cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.GhostExit);
             }
             else
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, CellType.Empty);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Empty);
             }
         }
     }
-    
+
     private bool IsNededTile(TileBase tile, TileBase[] neededTiles)
     {
         foreach (var neededTile in neededTiles)
@@ -69,7 +76,7 @@ public class Field : MonoBehaviour
         }
         return cells[position.x, position.y];
     }
-    
+
     public void SetCellType(Vector2Int position, CellType type)
     {
         Cell cell = GetCellAtPosition(position);
@@ -79,39 +86,37 @@ public class Field : MonoBehaviour
         }
     }
 
-    public void DebugPrintField()
+    public void OnPlayerEnterCell(Vector2Int position, Vector2Int previousPosition)
     {
-        if (cells == null) return;
+        Cell cell = GetCellAtPosition(position);
 
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-
-        // Верхній рядок з індексами X
-        sb.Append("   ");
-        for (int x = 0; x < cells.GetLength(0); x++)
-            sb.Append($"{x,2} ");
-        sb.AppendLine();
-
-        for (int y = cells.GetLength(1) - 1; y >= 0; y--)
+        if (cell == null)
         {
-            sb.Append($"{y,2} "); // Індекс Y зліва
-            for (int x = 0; x < cells.GetLength(0); x++)
-            {
-                char c = '.';
-                if (cells[x, y] != null)
-                {
-                    switch (cells[x, y].Type)
-                    {
-                        case CellType.Wall: c = '#'; break;
-                        case CellType.Pallet: c = '.'; break;
-                        case CellType.PowerPallet: c = 'O'; break;
-                        case CellType.Empty: c = ' '; break;
-                    }
-                }
-                sb.Append($" {c} ");
-            }
-            sb.AppendLine();
+            return;
         }
 
-        Debug.Log(sb.ToString());
+        OnPlayerCellEnter?.Invoke(cell);
+
+        SetCellType(cell.Position, CellType.Player);
+        SetCellType(previousPosition, CellType.Empty);
+    }
+
+    public int CountCellsOfType(CellType cellType)
+    {
+        int totalCells = 0;
+        foreach (Cell cell in cells)
+        {
+            if (cell.Type == cellType)
+            {
+                totalCells++;
+            }
+        }
+
+        return totalCells;
+    }
+
+    public void ChangeTile(Vector3Int localPositionOfCell)
+    {
+        tilemap.SetTile(localPositionOfCell, null);
     }
 }
