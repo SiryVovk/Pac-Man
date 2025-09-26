@@ -8,6 +8,7 @@ public class PlayerCollision : MonoBehaviour
     {
         health = GetComponent<Health>();
     }
+    
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.GetComponent<Ghost>())

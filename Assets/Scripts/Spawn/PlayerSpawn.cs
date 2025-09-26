@@ -6,7 +6,8 @@ public class PlayerSpawn : MonoBehaviour
     [SerializeField] private GameObject playerObject;
     [SerializeField] private Vector2Int spawnPosition;
 
-    public Transform playerTransform;
+    private Transform playerTransform;
+    private PlayerMovement playerMovement;
 
     private void Start()
     {
@@ -18,7 +19,7 @@ public class PlayerSpawn : MonoBehaviour
             GameObject player = Instantiate(playerObject, cellWorldPos, Quaternion.identity);
             playerTransform = player.transform;
 
-            PlayerMovement playerMovement = player.GetComponent<PlayerMovement>();
+            playerMovement = player.GetComponent<PlayerMovement>();
             playerMovement.Init(field);
             playerMovement.SetGridPosition(spawnPosition);
 
@@ -36,8 +37,12 @@ public class PlayerSpawn : MonoBehaviour
 
     private void GetPlayerToSpawn(int damage)
     {
-        Cell spawnCell = field.GetCellAtPosition(spawnPosition);
-        Vector3 cellWorldPos = spawnCell.InWorldPosition;
-        playerTransform.position = cellWorldPos;
+        field.SetCellType(playerMovement.GetPlayerGridPosition(), CellType.Empty);
+
+        Cell cell = field.GetCellAtPosition(spawnPosition);
+        field.SetCellType(spawnPosition, CellType.Player);
+        Vector3 inWorldPosition = cell.InWorldPosition;
+        playerTransform.position = inWorldPosition;
+        playerMovement.SetGridPosition(spawnPosition);
     }
 }

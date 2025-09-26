@@ -10,16 +10,19 @@ public class PlayerMovement : MonoBehaviour
 
     private PlayerInput playerInput;
     private Field field;
+    private Health health;
 
     private Vector2Int direction;
     private Vector2Int nextDirection;
     private Vector2Int gridPosition;
+    private Coroutine moveRoutin;
 
     private bool isMoving = false;
 
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
+        health = GetComponent<Health>();
         direction = Vector2Int.zero;
     }
 
@@ -30,6 +33,7 @@ public class PlayerMovement : MonoBehaviour
         playerInput.OnMoveDown += SetDownDirection;
         playerInput.OnMoveLeft += SetLeftDirection;
         playerInput.OnMoveRight += SetRightDirection;
+        health.OnHealthChanged += SetMovingToZero;
     }
 
     private void OnDisable()
@@ -38,6 +42,7 @@ public class PlayerMovement : MonoBehaviour
         playerInput.OnMoveDown -= SetDownDirection;
         playerInput.OnMoveLeft -= SetLeftDirection;
         playerInput.OnMoveRight -= SetRightDirection;
+        health.OnHealthChanged -= SetMovingToZero;
     }
 
     private void Start()
@@ -71,7 +76,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Move()
     {
-        StartCoroutine(MoveCoroutine());
+        moveRoutin = StartCoroutine(MoveCoroutine());
     }
 
     private IEnumerator MoveCoroutine()
@@ -111,6 +116,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         isMoving = false;
+        moveRoutin = null;
     }
 
     public void SetGridPosition(Vector2Int newPosition)
@@ -121,5 +127,22 @@ public class PlayerMovement : MonoBehaviour
     public Vector2Int GetPlayerGridPosition()
     {
         return gridPosition;
+    }
+
+    private void SetMovingToZero(int damage)
+    {
+        SetDirection(Vector2Int.zero);
+
+        if (moveRoutin != null)
+        {
+            StopCoroutine(moveRoutin);
+            moveRoutin = null;
+            isMoving = false;
+        }
+    }
+
+    public Vector2Int GetPlayerDirection()
+    {
+        return direction;
     }
 }

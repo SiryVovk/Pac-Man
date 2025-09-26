@@ -37,7 +37,7 @@ public class Ghost : MonoBehaviour
         }
         else if (!isMoving && ghostStratagy != null)
         {
-            Vector2Int nextMove = ChooseNextDirection(ghostStratagy.GetTargetPosition(GhostManager.Instance.PlayerMovement, this, GhostManager.Instance.GhostsList));
+            Vector2Int nextMove = ChooseNextDirection(ghostStratagy.GetTargetPosition(GhostManager.Instance.PlayerMovement, this, GhostManager.Instance.GhostsList, field));
             StartCoroutine(MoveRoutine(nextMove));
         }
     }
@@ -59,15 +59,15 @@ public class Ghost : MonoBehaviour
             Cell nextCell = field.GetCellAtPosition(nextPos);
 
             if (nextCell != null && nextCell.Type != CellType.Wall)
+            {
+                float distance = Vector2Int.Distance(nextPos, target);
+                if (distance < bestDistance)
                 {
-                    float distance = Vector2Int.Distance(nextPos, target);
-                    if (distance < bestDistance)
-                    {
-                        bestDistance = distance;
-                        bestMove = nextPos;
-                        expectedPreviousDirection = direction;
-                    }
+                    bestDistance = distance;
+                    bestMove = nextPos;
+                    expectedPreviousDirection = direction;
                 }
+            }
         }
 
         previousDirection = expectedPreviousDirection;
@@ -126,5 +126,15 @@ public class Ghost : MonoBehaviour
         ghostPosition = nextCell.Position;
         GhostManager.Instance.ReleaseCell(move);
         isMoving = false;
+    }
+
+    public GhostStratagySO GetGhostStratagy()
+    {
+        return ghostStratagy;
+    }
+
+    public Vector2Int GetGhostPosition()
+    {
+        return ghostPosition;
     }
 }

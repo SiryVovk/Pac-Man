@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36fdf0a0f69979b4fa0002261a16b3a0, type: 3}
-  m_Name: Blinky
+  m_Name: Inky
   m_EditorClassIdentifier: Assembly-CSharp::GhostSO
-  GhostObject: {fileID: 2159224245246416629, guid: 0d56b8ae88d6de54795f1d3590cc6bed, type: 3}
-  GhostStratagy: {fileID: 11400000, guid: 318b9c061bc8d8e4cbf4790ae74ae4dd, type: 2}
+  GhostObject: {fileID: 0}
+  GhostStratagy: {fileID: 0}

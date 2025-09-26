@@ -3,5 +3,5 @@ using UnityEngine;
 
 public abstract class GhostStratagySO : ScriptableObject
 {
-    public abstract Vector2Int GetTargetPosition(PlayerMovement player, Ghost self, List<Ghost> allGhost);
+    public abstract Vector2Int GetTargetPosition(PlayerMovement player, Ghost self, List<Ghost> allGhost, Field field);
 }
