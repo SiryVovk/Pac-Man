@@ -528,8 +528,8 @@ MonoBehaviour:
   ghostsSO:
   - {fileID: 11400000, guid: 1e172df2eb06d7842a4eabed40074528, type: 2}
   - {fileID: 11400000, guid: fd4706a0c067f084dadad9d58cbeb279, type: 2}
-  - {fileID: 11400000, guid: 1e172df2eb06d7842a4eabed40074528, type: 2}
-  - {fileID: 11400000, guid: 1e172df2eb06d7842a4eabed40074528, type: 2}
+  - {fileID: 11400000, guid: aae17335cdc419b45bc75cc163b4ac30, type: 2}
+  - {fileID: 11400000, guid: ee6e5e56ba513a5409062edc9d64fbc8, type: 2}
   field: {fileID: 339663255}
   exitPoint: {x: 11, y: 6}
   onGridPositions:
