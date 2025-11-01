@@ -1,4 +1,5 @@
-using Unity.VisualScripting;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GhostsSpawner : MonoBehaviour
@@ -7,6 +8,9 @@ public class GhostsSpawner : MonoBehaviour
     [SerializeField] private Field field;
     [SerializeField] private Vector2Int exitPoint;
     [SerializeField] private Vector2Int[] onGridPositions;
+    [SerializeField] private List<SkaterTarget> scaterTargets;
+    [SerializeField] private PowerModeManager powerModeManager;
+    [SerializeField] private GhostManager ghostManager;
 
     private void Start()
     {
@@ -18,9 +22,22 @@ public class GhostsSpawner : MonoBehaviour
         int ghostNumber = 0;
         foreach (GhostSO ghostSO in ghostsSO)
         {
-            SpawnGhost(ghostSO,ghostNumber);
+            SpawnGhost(ghostSO, ghostNumber);
             ghostNumber++;
         }
+
+        if (GameSesion.Instance == null)
+        {
+            return;
+        }
+
+        StartCoroutine(DeleyLoadingSaveData());
+    }
+    
+    private IEnumerator DeleyLoadingSaveData()
+    {
+        yield return new WaitForEndOfFrame();
+        ghostManager.LoadGhostsState(GameSesion.Instance.GetSaveData());
     }
 
     private void SpawnGhost(GhostSO ghostSO, int ghostNumber)
@@ -36,6 +53,11 @@ public class GhostsSpawner : MonoBehaviour
         GameObject ghostObject = Instantiate(ghostSO.GhostObject, positonForSpawn, Quaternion.identity);
 
         Ghost ghost = ghostObject.GetComponent<Ghost>();
-        ghost.Init(cell.Position, field, ghostSO.GhostStratagy, exitPoint);
+
+        Queue<Vector2Int> scaterTarget = scaterTargets[ghostNumber].GetPointsQueue();
+        ghost.Init(cell.Position, field, ghostSO.GhostStratagy, exitPoint, scaterTarget, powerModeManager, cell.Position);
+
+        ColorChanger colorChanger = ghostObject.GetComponent<ColorChanger>();
+        colorChanger.Init(powerModeManager);
     }
 }

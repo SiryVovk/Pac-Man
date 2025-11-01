@@ -9,6 +9,7 @@ public class Score : MonoBehaviour
 
     [SerializeField] private int palletCost = 10;
     [SerializeField] private int powerPalletCost = 25;
+    [SerializeField] private int ghostEatCost = 200;
 
     private int score;
 
@@ -17,9 +18,28 @@ public class Score : MonoBehaviour
         palletManager.OnPalletEaten += OnCellEatenAddScore;
     }
 
+    private void Start()
+    {
+        GhostManager.Instance.OnGhostEaten += GhostEatenAddScore;
+
+        if(GameSesion.Instance != null)
+        {
+            SaveData saveData = GameSesion.Instance.GetSaveData();
+            LoadStartingScore((int)saveData.score);
+        }
+    }
+
     private void OnDisable()
     {
         palletManager.OnPalletEaten -= OnCellEatenAddScore;
+    }
+
+    private void OnDestroy()
+    {
+        if (GhostManager.Instance != null)
+        {
+            GhostManager.Instance.OnGhostEaten -= GhostEatenAddScore;
+        }
     }
 
     private void OnCellEatenAddScore(CellType cellType)
@@ -37,6 +57,19 @@ public class Score : MonoBehaviour
                 break;
         }
 
+        OnScoreChange?.Invoke(score);
+    }
+
+    private void GhostEatenAddScore()
+    {
+        score += ghostEatCost;
+
+        OnScoreChange?.Invoke(score);
+    }
+
+    private void LoadStartingScore(int startingScore)
+    {
+        score = startingScore;
         OnScoreChange?.Invoke(score);
     }
 

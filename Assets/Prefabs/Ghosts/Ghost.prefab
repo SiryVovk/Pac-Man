@@ -133,6 +133,8 @@ GameObject:
   - component: {fileID: 1237871667266982375}
   - component: {fileID: 5534135573118906125}
   - component: {fileID: 8145778334122182585}
+  - component: {fileID: 4373737627636263006}
+  - component: {fileID: -3798839347522804863}
   m_Layer: 0
   m_Name: Ghost
   m_TagString: Untagged
@@ -168,7 +170,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce5493c606698d04aa4b628d28d4ffe9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ghost
-  moveDuration: 0.7
+  moveDuration: 0.4
+  respawnTime: 5
 --- !u!70 &8145778334122182585
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -206,3 +209,31 @@ CapsuleCollider2D:
   m_Offset: {x: 0.0027491748, y: 0}
   m_Size: {x: 0.91752476, y: 1}
   m_Direction: 0
+--- !u!114 &4373737627636263006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8572375198970766401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e713d1c8e2566e4a9e17e7b525cd21e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ColorChanger
+  enemyRenderer: {fileID: 4198787221662111420}
+  frightenedColor: {r: 0, g: 0, b: 1, a: 1}
+  blinkTime: 0.25
+--- !u!114 &-3798839347522804863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8572375198970766401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53b579e3b469d084d9d82b527aefbe2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GhostSprite
+  ghostRenderer: {fileID: 4198787221662111420}

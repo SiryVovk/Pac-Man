@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class GhostManager : MonoBehaviour
 {
+    public Action OnGhostEaten;
     public static GhostManager Instance { get; private set; }
     public PlayerMovement PlayerMovement { get; private set; }
     public List<Ghost> GhostsList { get; private set; } = new List<Ghost>();
@@ -44,6 +46,28 @@ public class GhostManager : MonoBehaviour
     public void ReleaseCell(Vector2Int pos)
     {
         reservedCells.Remove(pos);
+    }
+
+    public void GhostEaten()
+    {
+        OnGhostEaten?.Invoke();
+    }
+
+    public List<Ghost> GetAllGhosts()
+    {
+        return GhostsList;
+    }
+
+    public void LoadGhostsState(SaveData saveData)
+    {
+        for (int i = 0; i < GhostsList.Count; i++)
+        {
+            Vector2Int ghostPosition = new Vector2Int(saveData.ghostPositions[i, 0], saveData.ghostPositions[i, 1]);
+            int ghostState = saveData.ghostState[i, 0];
+            bool isDead = saveData.isGhostDead[i, 0] == 1;
+            float respawnTimeLeft = saveData.ghostRespawnTime[i, 0];
+            GhostsList[i].LoadSaveData(ghostPosition,ghostState, isDead, respawnTimeLeft);
+        }
     }
 }
 

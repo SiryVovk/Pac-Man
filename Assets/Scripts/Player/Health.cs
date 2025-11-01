@@ -12,7 +12,15 @@ public class Health : MonoBehaviour
 
     private void Start()
     {
-        currentHealth = maxHealth;
+        if(GameSesion.Instance != null)
+        {
+            SaveData saveData = GameSesion.Instance.GetSaveData();
+            currentHealth = saveData.lives;
+        }
+        else
+        {
+            currentHealth = maxHealth;
+        }
         OnHealthChanged?.Invoke(currentHealth);
     }
 

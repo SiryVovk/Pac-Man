@@ -18,6 +18,7 @@ public class PlayerMovement : MonoBehaviour
     private Coroutine moveRoutin;
 
     private bool isMoving = false;
+    private bool isInitialized = false;
 
     private void Awake()
     {
@@ -48,12 +49,46 @@ public class PlayerMovement : MonoBehaviour
     private void Start()
     {
         GhostManager.Instance.RegistrPlayer(this);
-        SetDirection(Vector2Int.up);
     }
 
-    public void Init(Field field)
+    public void Init(Field field, SaveData saveData = null)
     {
         this.field = field;
+        LoadData(saveData);
+        isInitialized = true;
+    }
+
+    private void LoadData(SaveData saveData)
+    {
+        if (moveRoutin != null)
+        {
+            StopCoroutine(moveRoutin);
+            moveRoutin = null;
+        }
+
+        isMoving = true;
+        if (saveData != null)
+        {
+            Vector2Int oldPosition = gridPosition;
+            gridPosition = new Vector2Int(saveData.playerPosition[0], saveData.playerPosition[1]);
+            field.OnPlayerEnterCell(gridPosition, oldPosition);
+            Vector3 newPos = field.GetCellAtPosition(gridPosition).InWorldPosition;
+            transform.position = newPos;
+
+            Vector2Int loadedDir = new Vector2Int(saveData.playerDirection[0], saveData.playerDirection[1]);
+            direction = loadedDir;
+            nextDirection = loadedDir;
+
+            OnDirectionChange?.Invoke(loadedDir);
+        }
+
+        StartCoroutine(UnlockMovementNextFrame());
+    }
+
+    private IEnumerator UnlockMovementNextFrame()
+    {
+        yield return null; // дочекайся одного кадру
+        isMoving = false;
     }
 
     private void SetUpDirection() => SetDirection(Vector2Int.up);
@@ -63,10 +98,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        if (!isMoving)
+        if(!isInitialized || isMoving)
         {
-            Move();
+            return;
         }
+
+        Move();
+
     }
 
     private void SetDirection(Vector2Int newDir)
@@ -83,40 +121,93 @@ public class PlayerMovement : MonoBehaviour
     {
         isMoving = true;
 
-        Vector2Int targetDir = direction;
-
-
-        if (field.GetCellAtPosition(gridPosition + nextDirection)?.Type != CellType.Wall)
-        {
-            targetDir = nextDirection;
-            OnDirectionChange?.Invoke(targetDir);
-        }
-
+        Vector2Int targetDir = GetValidDirection();
         Cell nextCell = field.GetCellAtPosition(gridPosition + targetDir);
 
-        if (nextCell != null && nextCell.Type != CellType.Wall && nextCell.Type != CellType.GhostExit)
+        if (CanMoveTo(nextCell))
         {
-            Vector3 startPos = transform.position;
-            Vector3 endPos = nextCell.InWorldPosition;
-
-            float elapsedTime = 0f;
-
-            while (elapsedTime < duration)
-            {
-                transform.position = Vector3.Lerp(startPos, endPos, elapsedTime / duration);
-                elapsedTime += Time.deltaTime;
-                yield return null;
-            }
-
-            transform.position = endPos;
-            gridPosition += targetDir;
-            field.OnPlayerEnterCell(gridPosition, gridPosition - targetDir);
-
-            direction = targetDir;
+            yield return MoveToCell(nextCell, targetDir);
         }
+
+        yield return TryTeleport(targetDir);
 
         isMoving = false;
         moveRoutin = null;
+    }
+
+    private Vector2Int GetValidDirection()
+    {
+        if (field.GetCellAtPosition(gridPosition + nextDirection)?.Type != CellType.Wall)
+        {
+            OnDirectionChange?.Invoke(nextDirection);
+            return nextDirection;
+        }
+
+        return direction;
+    }
+    
+    private bool CanMoveTo(Cell nextCell)
+    {
+        return nextCell != null && nextCell.Type != CellType.Wall && nextCell.Type != CellType.GhostExit;
+    }
+
+    private IEnumerator MoveToCell(Cell nextCell, Vector2Int targetDir)
+    {
+        Vector3 startPos = transform.position;
+        Vector3 endPos = nextCell.InWorldPosition;
+
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            transform.position = Vector3.Lerp(startPos, endPos, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position = endPos;
+        Vector2Int oldPosition = gridPosition;
+        gridPosition += targetDir;
+        field.OnPlayerEnterCell(gridPosition, oldPosition);
+
+        direction = targetDir;
+    }
+
+    private IEnumerator TryTeleport(Vector2Int targetDir)
+    {
+        var teleportDestination = field.GetTeleportDestination(gridPosition);
+
+        if (!teleportDestination.HasValue)
+        {
+            yield break;
+        }
+        
+        Vector3 offscreenOffset = (Vector2)targetDir * 0.5f;
+        Vector3 startOffscreen = transform.position + offscreenOffset;
+
+        float teleportHalfDuration = duration / 2;
+
+        float time = 0;
+        while (time < teleportHalfDuration)
+        {
+            transform.position = Vector3.Lerp(transform.position, startOffscreen, time / 0.2f);
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        Vector2Int beforTeleportPosition = gridPosition;
+        gridPosition = teleportDestination.Value;
+        field.OnPlayerEnterCell(gridPosition, beforTeleportPosition);
+        Vector3 newPos = field.GetCellAtPosition(gridPosition).InWorldPosition - offscreenOffset;
+        transform.position = newPos;
+
+        time = 0;
+        while (time < teleportHalfDuration)
+        {
+            transform.position = Vector3.Lerp(transform.position, field.GetCellAtPosition(gridPosition).InWorldPosition, time / 0.2f);
+            time += Time.deltaTime;
+            yield return null;
+        }
     }
 
     public void SetGridPosition(Vector2Int newPosition)
@@ -131,18 +222,26 @@ public class PlayerMovement : MonoBehaviour
 
     private void SetMovingToZero(int damage)
     {
-        SetDirection(Vector2Int.zero);
-
         if (moveRoutin != null)
         {
             StopCoroutine(moveRoutin);
             moveRoutin = null;
             isMoving = false;
         }
+
+        direction = Vector2Int.zero;
+        nextDirection = Vector2Int.zero;
+
+        OnDirectionChange?.Invoke(Vector2Int.zero);
     }
 
     public Vector2Int GetPlayerDirection()
     {
         return direction;
+    }
+
+    public void SetPlayerDirection(Vector2Int newDirection)
+    {
+        direction = newDirection;
     }
 }

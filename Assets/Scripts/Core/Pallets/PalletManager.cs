@@ -8,17 +8,20 @@ public class PalletManager : MonoBehaviour
 
     [SerializeField] private Field field;
     [SerializeField] private CellType[] palletCellTypes;
+    [SerializeField] private CellType[] powerPalletTypes;
 
     private int totalPallets = 0;
 
     private void OnEnable()
     {
         field.OnPlayerCellEnter += EatPallet;
+        field.OnGameDataLoadCell += LoadPalletData;
     }
 
     private void OnDisable()
     {
         field.OnPlayerCellEnter -= EatPallet;
+        field.OnGameDataLoadCell -= LoadPalletData;
     }
 
     private void Start()
@@ -42,6 +45,11 @@ public class PalletManager : MonoBehaviour
         {
             OnAllPalletEaten?.Invoke();
         }
+    }
+
+    private void LoadPalletData(Cell cellLoaded)
+    {
+        field.ChangeTile(cellLoaded.LocalPosition);
     }
 
     private bool IsPalletCell(Cell cellToCheck)

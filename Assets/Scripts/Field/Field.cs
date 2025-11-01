@@ -1,23 +1,30 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class Field : MonoBehaviour
 {
     public Action<Cell> OnPlayerCellEnter;
+    public Action<Cell> OnGameDataLoadCell;
 
     [SerializeField] private Tilemap tilemap;
     [SerializeField] private TileBase[] wallTile;
     [SerializeField] private TileBase[] palletTile;
     [SerializeField] private TileBase[] powerPalletTile;
     [SerializeField] private TileBase[] exitTile;
-
+    [SerializeField] private List<PortalPair> portals;
 
     private Cell[,] cells;
 
     private void Awake()
     {
         InitializeField();
+
+        if(GameSesion.Instance != null)
+        {
+            LoadFieldFromSave(GameSesion.Instance.GetSaveData());
+        }
     }
 
     private void InitializeField()
@@ -32,28 +39,41 @@ public class Field : MonoBehaviour
             TileBase tile = tilemap.GetTile(localPos);
             Vector2Int cellPos = new Vector2Int(pos.x - bounds.xMin, pos.y - bounds.yMin);
             Vector3 worldPos = tilemap.GetCellCenterWorld(localPos);
+            bool isTeleportCell = IsTeleportCell(cellPos);
 
             if (IsNededTile(tile, wallTile))
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Wall);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Wall,isTeleportCell);
             }
             else if (IsNededTile(tile, palletTile))
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Pallet);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Pallet,isTeleportCell);
             }
             else if (IsNededTile(tile, powerPalletTile))
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.PowerPallet);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.PowerPallet,isTeleportCell);
             }
             else if (IsNededTile(tile, exitTile))
             {
-                cells[cellPos.x,cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.GhostExit);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.GhostExit,isTeleportCell);
             }
             else
             {
-                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Empty);
+                cells[cellPos.x, cellPos.y] = new Cell(cellPos, worldPos, localPos, CellType.Empty,isTeleportCell);
             }
         }
+    }
+
+    private bool IsTeleportCell(Vector2Int cellPos)
+    {
+        foreach (var portal in portals)
+        {
+            if (portal.from == cellPos || portal.to == cellPos)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private bool IsNededTile(TileBase tile, TileBase[] neededTiles)
@@ -86,6 +106,21 @@ public class Field : MonoBehaviour
         }
     }
 
+    private void LoadFieldFromSave(SaveData data)
+    {
+        for(int index = 0; index < data.isEmpty.Length; index++)
+        {
+            bool cellEmpty = data.isEmpty[index];
+            if (cellEmpty)
+            {
+                Vector2Int position = new Vector2Int(index % Width, index / Width);
+                CellType type = CellType.Empty;
+                SetCellType(position, type);
+                OnGameDataLoadCell?.Invoke(GetCellAtPosition(position));
+            }
+        }
+    }
+    
     public void OnPlayerEnterCell(Vector2Int position, Vector2Int previousPosition)
     {
         Cell cell = GetCellAtPosition(position);
@@ -119,4 +154,24 @@ public class Field : MonoBehaviour
     {
         tilemap.SetTile(localPositionOfCell, null);
     }
+
+    public Vector2Int? GetTeleportDestination(Vector2Int teleportPos)
+    {
+        foreach (PortalPair portal in portals)
+        {
+            if (portal.from == teleportPos)
+            {
+                return portal.to;
+            }
+            if (portal.to == teleportPos)
+            {
+                return portal.from;
+            }
+        }
+
+        return null;
+    }
+
+    public int Width => cells.GetLength(0);
+    public int Height => cells.GetLength(1);
 }
